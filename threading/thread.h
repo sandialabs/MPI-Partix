@@ -51,9 +51,9 @@
 #define debug(m)
 #endif
 
-__attribute__((noinline)) void partix_task(void (*)(partix_task_args_t *),
+void partix_task(void (*)(partix_task_args_t *),
                                            void *, partix_context_t *);
-__attribute__((noinline)) void partix_taskwait(partix_context_t *);
+void partix_taskwait(partix_context_t *);
 
 void partix_library_init(void);
 void partix_library_finalize(void);
