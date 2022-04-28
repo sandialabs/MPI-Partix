@@ -2,8 +2,8 @@
 // ************************************************************************
 //
 //                        MPI Partix 1.0
-//       Copyright 2022 National Technology & Engineering 
-//                Solutions of Sandia, LLC (NTESS). 
+//       Copyright 2022 National Technology & Engineering
+//                Solutions of Sandia, LLC (NTESS).
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
@@ -38,6 +38,8 @@
 //
 // ************************************************************************
 //@HEADER
+
+/* Reference code based on examples in the Open MPI 4.0 spec */
 
 #include "mpi.h"
 #include <stdio.h>

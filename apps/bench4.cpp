@@ -2,8 +2,8 @@
 // ************************************************************************
 //
 //                        MPI Partix 1.0
-//       Copyright 2022 National Technology & Engineering 
-//                Solutions of Sandia, LLC (NTESS). 
+//       Copyright 2022 National Technology & Engineering
+//                Solutions of Sandia, LLC (NTESS).
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
@@ -63,18 +63,17 @@ double timer[3] = {0.0, 0.0, 0.0};
 
 /* My task args */
 typedef struct {
-  double * data; 
+  double *data;
   size_t num_elems;
   int partition_id;
   int target;
 } task_args_t;
 
-
 void recv_task(partix_task_args_t *args) {
   task_args_t *task_args = (task_args_t *)args->user_task_args;
   MPI_Request request;
-  int target       = task_args->target;
-  double * data    = task_args->data;
+  int target = task_args->target;
+  double *data = task_args->data;
   size_t num_elems = task_args->num_elems;
 
   int ret = MPI_Irecv(&data, num_elems, DATA_TYPE, target, 0, comm, &request);
@@ -90,13 +89,12 @@ void send_task(partix_task_args_t *args) {
   MPI_Request request;
   size_t sleep_time_ms;
 
-  int target       = task_args->target;
-  sleep_time_ms    = global_conf->overlap_duration;
-  double * data = task_args->data;
+  int target = task_args->target;
+  sleep_time_ms = global_conf->overlap_duration;
+  double *data = task_args->data;
   size_t num_elems = task_args->num_elems;
-  
-  int ret = MPI_Isend(data, num_elems, DATA_TYPE, target, 0, comm,
-                  &request);
+
+  int ret = MPI_Isend(data, num_elems, DATA_TYPE, target, 0, comm, &request);
 
 #ifdef ALL_TASKS_SLEEP_SAME_AMMOUNT
   usleep(sleep_time_ms * 1000);
@@ -109,7 +107,7 @@ void send_task(partix_task_args_t *args) {
   }
   usleep(sleep_time_ms * 1000);
 #endif
-  
+
   assert(ret == 0);
   ret = MPI_Wait(&request, MPI_STATUS_IGNORE);
   assert(ret == 0);
@@ -134,33 +132,33 @@ int main(int argc, char *argv[]) {
   size_t num_partitions = conf.num_partitions;
   size_t num_partlength = conf.num_partlength;
 
+  MPI_Request request;
+  MPI_Info info = MPI_INFO_NULL;
+  MPI_Datatype send_xfer_type;
+  MPI_Datatype recv_xfer_type;
+
+  MPI_Count send_partitions = num_partitions;
+  MPI_Count send_partlength = num_partlength;
+
+  MPI_Count recv_partitions =
+      num_partitions * DEFAULT_RECV_SEND_PARTITION_RATIO;
+  MPI_Count recv_partlength =
+      num_partlength / DEFAULT_RECV_SEND_PARTITION_RATIO;
+
+  double *message = new double[num_partitions * num_partlength];
+
+  MPI_Type_contiguous(send_partlength, DATA_TYPE, &send_xfer_type);
+  MPI_Type_contiguous(recv_partlength, DATA_TYPE, &recv_xfer_type);
+  MPI_Type_commit(&send_xfer_type);
+  MPI_Type_commit(&recv_xfer_type);
+
   for (int i = 0; i < iterations; ++i) {
     // Benchmark iteration
     {
-      MPI_Request request;
-      MPI_Info info = MPI_INFO_NULL;
-      MPI_Datatype send_xfer_type;
-      MPI_Datatype recv_xfer_type;
-
-      MPI_Count send_partitions = num_partitions;
-      MPI_Count send_partlength = num_partlength;
-
-      MPI_Count recv_partitions =
-          num_partitions * DEFAULT_RECV_SEND_PARTITION_RATIO;
-      MPI_Count recv_partlength =
-          num_partlength / DEFAULT_RECV_SEND_PARTITION_RATIO;
-
-      double *message = new double[num_partitions * num_partlength];
-
-      MPI_Type_contiguous(send_partlength, DATA_TYPE, &send_xfer_type);
-      MPI_Type_contiguous(recv_partlength, DATA_TYPE, &recv_xfer_type);
-      MPI_Type_commit(&send_xfer_type);
-      MPI_Type_commit(&recv_xfer_type);
-
       /* Rank 0 */
       if (myrank == 0) {
-        task_args_t *send_args = (task_args_t *)calloc(
-            send_partitions, sizeof(task_args_t));
+        task_args_t *send_args =
+            (task_args_t *)calloc(send_partitions, sizeof(task_args_t));
         double start_time = MPI_Wtime();
         // set context
         partix_context_t ctx;
@@ -173,7 +171,7 @@ int main(int argc, char *argv[]) {
           send_args[j].data = &message[j * send_partlength];
           send_args[j].target = myrank ^ 1;
           send_args[j].num_elems = send_partlength;
-          
+
           partix_task(&send_task /*functor*/, &send_args[j] /*capture*/, &ctx);
         }
         partix_taskwait(&ctx);
@@ -182,8 +180,8 @@ int main(int argc, char *argv[]) {
         free(send_args);
       } else if (myrank == 1) {
         /* Rank 1 */
-        task_args_t *recv_args = (task_args_t *)calloc(
-            recv_partitions, sizeof(task_args_t));
+        task_args_t *recv_args =
+            (task_args_t *)calloc(recv_partitions, sizeof(task_args_t));
         double start_time = MPI_Wtime();
 
         // set context
@@ -205,12 +203,11 @@ int main(int argc, char *argv[]) {
         timer[1] += delta_time;
         free(recv_args);
       }
-      delete[] message;
       MPI_Barrier(MPI_COMM_WORLD);
     }
   }
 
-  // Measure perceived BW, that is communication as it were in the critical 
+  // Measure perceived BW, that is communication as it were in the critical
   // path, by subtracting overlap
   timer[0] -= iterations * (float)global_conf->overlap_duration / 1000;
   timer[1] -= iterations * (float)global_conf->overlap_duration / 1000;
@@ -225,8 +222,7 @@ int main(int argc, char *argv[]) {
     double send_BW = total_size_bytes / timer[0] / 1024 / 1024;
 #if true
     printf("%i, %i, %i, %.3f, %.2f, %.2f, %.2f, %.2f\n", conf.num_tasks,
-           conf.num_threads,
-           conf.num_partitions,
+           conf.num_threads, conf.num_partitions,
            (float)global_conf->overlap_duration / 1000.0,
            ((double)patition_size_bytes) / 1024,
            ((double)total_size_bytes) / 1024, timer[0] /*rank0*/, send_BW);
@@ -245,6 +241,10 @@ int main(int argc, char *argv[]) {
           recv_BW);
 #endif
   }
+
+  MPI_Type_free(&send_xfer_type);
+  MPI_Type_free(&recv_xfer_type);
+  delete[] message;
 
   MPI_Finalize();
   partix_library_finalize();

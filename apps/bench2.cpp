@@ -2,8 +2,8 @@
 // ************************************************************************
 //
 //                        MPI Partix 1.0
-//       Copyright 2022 National Technology & Engineering 
-//                Solutions of Sandia, LLC (NTESS). 
+//       Copyright 2022 National Technology & Engineering
+//                Solutions of Sandia, LLC (NTESS).
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
@@ -96,8 +96,8 @@ void recv_task(partix_task_args_t *args) {
 void send_task(partix_task_args_t *args) {
   send_task_args_t *task_args = (send_task_args_t *)args->user_task_args;
 
-// First partition completion is delayed by sleep_time_ms
-size_t sleep_time_ms = 0;
+  // First partition completion is delayed by sleep_time_ms
+  size_t sleep_time_ms = 0;
 #ifdef ALL_TASKS_SLEEP_SAME_AMMOUNT
   sleep_time_ms = global_conf->overlap_duration;
 #else
@@ -128,31 +128,31 @@ int main(int argc, char *argv[]) {
   size_t num_partitions = conf.num_partitions;
   size_t num_partlength = conf.num_partlength;
 
+  MPI_Request request;
+  MPI_Info info = MPI_INFO_NULL;
+  MPI_Datatype send_xfer_type;
+  MPI_Datatype recv_xfer_type;
+
+  MPI_Count send_partitions = num_partitions;
+  MPI_Count send_partlength = num_partlength;
+
+  MPI_Count recv_partitions =
+      num_partitions * DEFAULT_RECV_SEND_PARTITION_RATIO;
+  MPI_Count recv_partlength =
+      num_partlength / DEFAULT_RECV_SEND_PARTITION_RATIO;
+
+  double *message = new double[num_partitions * num_partlength];
+
+  int count = 1, source = 0, dest = 1, tag = 1, flag = 0;
+
+  MPI_Type_contiguous(send_partlength, DATA_TYPE, &send_xfer_type);
+  MPI_Type_contiguous(recv_partlength, DATA_TYPE, &recv_xfer_type);
+  MPI_Type_commit(&send_xfer_type);
+  MPI_Type_commit(&recv_xfer_type);
+
   for (int i = 0; i < iterations; ++i) {
     // Benchmark iteration
     {
-      MPI_Request request;
-      MPI_Info info = MPI_INFO_NULL;
-      MPI_Datatype send_xfer_type;
-      MPI_Datatype recv_xfer_type;
-
-      MPI_Count send_partitions = num_partitions;
-      MPI_Count send_partlength = num_partlength;
-
-      MPI_Count recv_partitions =
-          num_partitions * DEFAULT_RECV_SEND_PARTITION_RATIO;
-      MPI_Count recv_partlength =
-          num_partlength / DEFAULT_RECV_SEND_PARTITION_RATIO;
-
-      double *message = new double[num_partitions * num_partlength];
-
-      int count = 1, source = 0, dest = 1, tag = 1, flag = 0;
-
-      MPI_Type_contiguous(send_partlength, DATA_TYPE, &send_xfer_type);
-      MPI_Type_contiguous(recv_partlength, DATA_TYPE, &recv_xfer_type);
-      MPI_Type_commit(&send_xfer_type);
-      MPI_Type_commit(&recv_xfer_type);
-
       /* Rank 0 */
 
       if (myrank == 0) {
@@ -230,12 +230,11 @@ int main(int argc, char *argv[]) {
         MPI_Request_free(&request);
         free(recv_args);
       }
-      delete[] message;
       MPI_Barrier(MPI_COMM_WORLD);
     }
   }
 
-  // Measure perceived BW, that is communication as it were in the critical 
+  // Measure perceived BW, that is communication as it were in the critical
   // path, by subtracting overlap
   timer[0] -= iterations * (float)global_conf->overlap_duration / 1000;
   timer[1] -= iterations * (float)global_conf->overlap_duration / 1000;
@@ -249,10 +248,8 @@ int main(int argc, char *argv[]) {
   if (myrank == 0) {
     double send_BW = total_size_bytes / timer[0] / 1024 / 1024;
 #if true
-    printf("%i, %i, %i, %.3f, %.2f, %.2f, %.2f, %.2f\n",
-           conf.num_tasks,
-           conf.num_threads, 
-           conf.num_partitions,
+    printf("%i, %i, %i, %.3f, %.2f, %.2f, %.2f, %.2f\n", conf.num_tasks,
+           conf.num_threads, conf.num_partitions,
            (float)global_conf->overlap_duration / 1000.0,
            ((double)patition_size_bytes) / 1024,
            ((double)total_size_bytes) / 1024, timer[0] /*rank0*/, send_BW);
@@ -271,6 +268,10 @@ int main(int argc, char *argv[]) {
           recv_BW);
 #endif
   }
+
+  MPI_Type_free(&send_xfer_type);
+  MPI_Type_free(&recv_xfer_type);
+  delete[] message;
 
   MPI_Finalize();
   partix_library_finalize();

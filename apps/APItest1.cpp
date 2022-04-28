@@ -2,8 +2,8 @@
 // ************************************************************************
 //
 //                        MPI Partix 1.0
-//       Copyright 2022 National Technology & Engineering 
-//                Solutions of Sandia, LLC (NTESS). 
+//       Copyright 2022 National Technology & Engineering
+//                Solutions of Sandia, LLC (NTESS).
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
@@ -39,8 +39,8 @@
 // ************************************************************************
 //@HEADER
 
-#include <partix.h>
 #include <cstdio>
+#include <partix.h>
 
 void task(partix_task_args_t *args) { printf("Hello World\n"); }
 

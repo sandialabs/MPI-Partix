@@ -2,8 +2,8 @@
 // ************************************************************************
 //
 //                        MPI Partix 1.0
-//       Copyright 2022 National Technology & Engineering 
-//                Solutions of Sandia, LLC (NTESS). 
+//       Copyright 2022 National Technology & Engineering
+//                Solutions of Sandia, LLC (NTESS).
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
@@ -67,8 +67,7 @@ typedef struct {
   int target;
 } task_args_t;
 
-__attribute__((noinline)) 
-void task_send(partix_task_args_t *args) {
+__attribute__((noinline)) void task_send(partix_task_args_t *args) {
   int ret;
   MPI_Request request;
 
@@ -104,8 +103,7 @@ void task_send(partix_task_args_t *args) {
   partix_mutex_exit(&mutex);
 }
 
-__attribute__((noinline)) 
-void task_recv(partix_task_args_t *args) {
+__attribute__((noinline)) void task_recv(partix_task_args_t *args) {
   int ret, tmp;
   MPI_Request request;
 
@@ -171,7 +169,7 @@ int main(int argc, char *argv[]) {
 
   partix_mutex_init(&mutex);
 
-  //set context
+  // set context
   partix_context_t ctx;
 
 #if defined(OMP)
